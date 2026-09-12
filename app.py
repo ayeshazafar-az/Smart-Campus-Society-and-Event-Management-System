@@ -59,6 +59,17 @@ def main():
                             }
                         }
                     })
+                    
+                    # Guarantee the profile is completely correct using an upsert
+                    # This safely overrides any database trigger defaults and avoids metadata parsing bugs
+                    if getattr(res, 'user', None):
+                        supabase.table("profiles").upsert({
+                            "id": res.user.id,
+                            "email": new_email,
+                            "name": name,
+                            "role": role
+                        }).execute()
+                        
                     st.success("Successfully registered! You can now log in.")
                 except Exception as e:
                     st.error(f"Registration failed: {e}")

@@ -7,10 +7,23 @@ from utils.ai_recs import get_recommendations
 st.set_page_config(page_title="Student Dashboard", page_icon="🎓", layout="wide")
 
 def check_student():
+    st.markdown("""<style>[data-testid="stSidebarNav"] {display: none;}</style>""", unsafe_allow_html=True)
+    if st.sidebar.button("Log Out", type="primary"):
+        st.session_state.user = None
+        st.session_state.role = None
+        try: get_supabase().auth.sign_out()
+        except: pass
+        st.switch_page("app.py")
+
     if "user" not in st.session_state or st.session_state.user is None:
         st.warning("Please log in from the main page.")
         st.stop()
+        
     supabase = get_supabase()
+    res = supabase.table("profiles").select("role").eq("id", st.session_state.user.id).execute()
+    if not res.data or res.data[0].get("role") != "student":
+        st.error("Unauthorized: Student access required.")
+        st.stop()
     return st.session_state.user.id, supabase
 
 user_id, supabase = check_student()
