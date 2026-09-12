@@ -601,36 +601,38 @@ def apply_custom_theme():
     }
 
     /* Selectbox dropdown */
-    [data-baseweb="select"] > div {
-        background: rgba(17, 24, 39, 0.7) !important;
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+        background-color: #111827 !important;
         border: 1px solid var(--border-subtle) !important;
         border-radius: 10px !important;
-        backdrop-filter: blur(12px) !important;
-        transition: all 0.2s ease !important;
+        color: #f1f5f9 !important;
     }
-    [data-baseweb="select"] > div:focus-within {
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within {
         border-color: var(--accent-indigo) !important;
         box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18), 0 0 20px rgba(129, 140, 248, 0.1) !important;
     }
-    [data-baseweb="select"] span, [data-baseweb="select"] div {
-        color: var(--text-primary) !important;
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
+        color: #f1f5f9 !important;
     }
-    [data-baseweb="popover"] > div,
-    [data-baseweb="menu"] {
-        background: #111827 !important;
+    
+    /* Dropdown Popover List */
+    div[data-baseweb="popover"] > div, 
+    ul[data-baseweb="menu"] {
+        background-color: #111827 !important;
         border: 1px solid var(--border-subtle) !important;
         border-radius: 12px !important;
         box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
     }
-    [role="option"] {
-        color: var(--text-primary) !important;
-        background: transparent !important;
+    ul[data-baseweb="menu"] li[role="option"] {
+        color: #f1f5f9 !important;
+        background-color: transparent !important;
         border-radius: 6px !important;
         margin: 2px 4px !important;
         transition: all 0.15s ease !important;
     }
-    [role="option"]:hover, [aria-selected="true"] {
-        background: rgba(129, 140, 248, 0.12) !important;
+    ul[data-baseweb="menu"] li[role="option"]:hover, 
+    ul[data-baseweb="menu"] li[aria-selected="true"] {
+        background-color: rgba(129, 140, 248, 0.12) !important;
         color: var(--accent-indigo) !important;
     }
 
