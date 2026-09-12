@@ -1,4 +1,5 @@
 import os
+import re
 import streamlit as st
 from utils.db import get_supabase, reset_supabase_session
 from utils.ui import apply_custom_theme, render_html
@@ -141,7 +142,7 @@ def main():
             with tabs[1]:
                 name = st.text_input("Full Name", placeholder="Alex Morgan", key="signup_name")
                 new_email = st.text_input("Email Address", placeholder="name@campus.edu", key="signup_email")
-                new_password = st.text_input("Create Password", type="password", placeholder="Minimum 6 characters", key="signup_password")
+                new_password = st.text_input("Create Password", type="password", placeholder="8+ chars, upper, lower, num, special", key="signup_password")
                 
                 role_choice = st.selectbox(
                     "Account Type",
@@ -170,8 +171,8 @@ def main():
                         st.error("Please enter your full name.")
                     elif not new_email.strip() or "@" not in new_email:
                         st.error("Please provide a valid email address.")
-                    elif len(new_password) < 6:
-                        st.error("Password must be at least 6 characters long.")
+                    elif len(new_password) < 8 or not re.search(r"[a-z]", new_password) or not re.search(r"[A-Z]", new_password) or not re.search(r"[0-9]", new_password) or not re.search(r"[!@#$%^&*(),.?\":{}|<>]", new_password):
+                        st.error("Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters.")
                     elif is_admin_attempt and admin_key_input.strip() != os.environ.get("ADMIN_SECRET_KEY", "campus_admin_2026"):
                         st.error("Invalid Administrator Authorization Key. Registration denied.")
                     else:
