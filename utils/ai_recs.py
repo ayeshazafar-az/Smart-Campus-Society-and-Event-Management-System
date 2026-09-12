@@ -49,10 +49,20 @@ def get_recommendations(user_id: str) -> str:
         Based strictly on the student's background and past events attended, pick 2-3 most relevant events from the 'Upcoming Approved Events' list. 
         Format the response in engaging markdown. Be enthusiastic, clear, and brief. Start directly with the recommendations.
         """
-        
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        return response.text
+        # List of supported models with automatic fallback
+        candidate_models = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-flash-latest']
+        last_error = None
+        for model_name in candidate_models:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                if response and response.text:
+                    return response.text
+            except Exception as m_err:
+                last_error = m_err
+                continue
+                
+        raise RuntimeError(f"Could not generate recommendations with models {candidate_models}: {last_error}")
         
     except Exception as e:
         return f"Warning: AI Recommendation encountered an error: {str(e)}"
