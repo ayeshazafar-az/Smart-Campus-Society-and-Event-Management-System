@@ -185,6 +185,8 @@ else:
                     with st.container(border=True):
                         col_e_title, col_e_stats = st.columns([3, 2])
                         with col_e_title:
+                            if event.get("poster"):
+                                st.image(event.get("poster"), use_container_width=True)
                             render_html(f"""
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap;">
                                 <span class="badge badge-{status_badge_class}">{status_val.upper()}</span>

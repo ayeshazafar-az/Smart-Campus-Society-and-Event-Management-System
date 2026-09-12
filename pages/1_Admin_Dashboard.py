@@ -159,6 +159,8 @@ with tab_soc_approvals:
             with st.container(border=True):
                 colA, colB = st.columns([3.5, 1.2])
                 with colA:
+                    if soc.get("logo"):
+                        st.image(soc.get("logo"), width=150)
                     render_html(f"""
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                         <span class="badge badge-pending">PENDING CHARTER</span>
@@ -205,6 +207,8 @@ with tab_evt_approvals:
             with st.container(border=True):
                 colA, colB = st.columns([3.5, 1.2])
                 with colA:
+                    if event.get("poster"):
+                        st.image(event.get("poster"), use_container_width=True)
                     render_html(f"""
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
                         <span class="badge badge-pending">PENDING VERIFICATION</span>
