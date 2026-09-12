@@ -152,12 +152,14 @@ with tab_discover:
                 fill_pct = min(100, int((current_regs / capacity) * 100)) if capacity and capacity > 0 else 0
                 fee_badge = f'<span class="badge badge-paid">${event.get("fee", 0):.2f}</span>' if event.get("is_paid") else '<span class="badge badge-free">FREE</span>'
                 category_badge = f'<span class="badge badge-category">{event.get("category", "General")}</span>'
+                poster_html = f'<img src="{event.get("poster")}" style="width: 100%; object-fit: cover; border-radius: 12px; margin-bottom: 1rem; max-height: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" />' if event.get("poster") else ''
 
                 with st.container(border=True):
                     col_info, col_action = st.columns([3.2, 1])
                     
                     with col_info:
                         render_html(f"""
+                        {poster_html}
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                             {category_badge}
                             {fee_badge}

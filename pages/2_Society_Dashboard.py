@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import base64
 from utils.db import get_supabase, reset_supabase_session
 from utils.ui import (
     apply_custom_theme, 
@@ -60,24 +61,24 @@ if not society:
         <h3 style="font-size: 1.15rem; font-weight: 700; color: #f1f5f9; margin: 0 0 0.75rem 0;">Submit Society Registration</h3>
         """)
         with st.form("create_society_form"):
-            soc_name = st.text_input("Official Society Name*", placeholder="e.g. Artificial Intelligence Student Chapter")
-            soc_dept = st.text_input("Associated Department (Optional)", placeholder="e.g. Department of Computer Science")
-            soc_desc = st.text_area("Mission Statement & Description", placeholder="Describe your society's purpose, activities, and membership...")
+            soc_name = st.text_input("Society Name*")
+            soc_desc = st.text_area("Description")
+            soc_dept = st.text_input("Department (Optional)")
+            logo_file = st.file_uploader("Upload Society Logo (Optional)", type=["png", "jpg", "jpeg"], key="soc_logo_uploader")
             
-            render_html("<div style='height: 8px;'></div>")
-            if st.form_submit_button("Submit for Administrative Approval", type="primary", use_container_width=True):
-                if soc_name.strip():
-                    supabase.table("societies").insert({
-                        "name": soc_name.strip(),
-                        "description": soc_desc.strip(),
-                        "department": soc_dept.strip(),
-                        "head_id": user_id,
-                        "status": "pending"
-                    }).execute()
-                    st.success("🎉 Society charter submitted! Pending administrative review.")
-                    st.rerun()
-                else:
-                    st.error("Please provide a society name.")
+            if st.form_submit_button("Submit for Admin Approval") and soc_name:
+                logo_b64 = None
+                if logo_file:
+                    logo_b64 = f"data:{logo_file.type};base64,{base64.b64encode(logo_file.read()).decode()}"
+                    
+                # Note the status explicitly set to pending
+                supabase.table("societies").insert({
+                    "name": soc_name, "description": soc_desc, "department": soc_dept, "head_id": user_id, "status": "pending", "logo": logo_b64
+                }).execute()
+                st.success("Society profile submitted successfully! It is now pending review.")
+                st.rerun()
+            else:
+                st.error("Please provide a society name.")
 else:
     status = society.get('status', 'pending')
     
@@ -249,14 +250,20 @@ else:
                     st.markdown("#### 3. Capacity & Pricing")
                     col3, col4 = st.columns(2)
                     with col3:
-                        capacity = col3.number_input("Attendee Capacity (0 = unlimited)", min_value=0, value=100, step=10)
+                        capacity = col3.number_input("Capacity (0 for unlimited)", min_value=0, value=100)
                     with col4:
-                        is_paid = col4.checkbox("Paid entry event?")
-                        fee = col4.number_input("Ticket Fee ($)", min_value=0.0, value=0.0, step=1.0) if is_paid else 0.0
+                        is_paid = col4.checkbox("Is a Paid Event?")
+                        fee = col4.number_input("Fee Amount (if paid)", min_value=0.0, value=0.0)
+                    
+                    poster_file = st.file_uploader("Upload Event Poster (Optional)", type=["png", "jpg", "jpeg"], key="evt_poster_uploader")
                     
                     render_html("<div style='height: 12px;'></div>")
                     if st.form_submit_button("Submit Event for Review", type="primary", use_container_width=True):
                         if title.strip() and date and venue.strip() and desc.strip():
+                            poster_b64 = None
+                            if poster_file:
+                                poster_b64 = f"data:{poster_file.type};base64,{base64.b64encode(poster_file.read()).decode()}"
+                                
                             supabase.table("events").insert({
                                 "society_id": society['id'],
                                 "title": title.strip(),
@@ -269,7 +276,8 @@ else:
                                 "capacity": capacity if capacity > 0 else None,
                                 "is_paid": is_paid,
                                 "fee": float(fee) if is_paid else 0.0,
-                                "status": "pending"
+                                "status": "pending",
+                                "poster": poster_b64
                             }).execute()
                             st.success("🎉 Event proposal submitted! Awaiting administration approval.")
                             st.rerun()

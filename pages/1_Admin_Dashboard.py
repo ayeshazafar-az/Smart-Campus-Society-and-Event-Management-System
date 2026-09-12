@@ -253,6 +253,14 @@ with tab_master:
             st.dataframe(pd.DataFrame(users_res.data), use_container_width=True)
         else:
             st.info("No users found.")
+            
+    with st.container(border=True):
+        st.markdown("#### Active Campus Societies")
+        soc_active_res = supabase.table("societies").select("id, name, department, status, created_at").eq("status", "active").order("created_at", desc=True).execute()
+        if soc_active_res.data:
+            st.dataframe(pd.DataFrame(soc_active_res.data), use_container_width=True)
+        else:
+            st.info("No active societies yet.")
     
     with st.container(border=True):
         st.markdown("#### Global Pass Issuance")
