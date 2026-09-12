@@ -78,10 +78,11 @@ with c4:
 render_html("<div style='height: 1.5rem;'></div>")
 
 # Administration Tabs
-tab_overview, tab_soc_approvals, tab_evt_approvals = st.tabs([
+tab_overview, tab_soc_approvals, tab_evt_approvals, tab_master = st.tabs([
     "Platform Analytics", 
     "Society Charter Queue", 
-    "Event Authorization Queue"
+    "Event Authorization Queue",
+    "Master Directory"
 ])
 
 # -------------------------------------------------------------
@@ -234,3 +235,29 @@ with tab_evt_approvals:
                         st.rerun()
     else:
         render_empty_state("No Pending Events", "The event queue is clear. New proposals will appear here.", "✔️")
+
+# -------------------------------------------------------------
+# TAB 4: MASTER DIRECTORY (ADMIN OVERSIGHT)
+# -------------------------------------------------------------
+with tab_master:
+    render_html("""
+    <div style="margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #f1f5f9; margin: 0;">Global Campus Roster</h3>
+        <p style="font-size: 0.825rem; color: #64748b; margin-top: 0.25rem;">High-level oversight of registered students and global system accounts.</p>
+    </div>
+    """)
+    with st.container(border=True):
+        st.markdown("#### Registered Users")
+        users_res = supabase.table("profiles").select("id, name, email, role, department, created_at").order("created_at", desc=True).execute()
+        if users_res.data:
+            st.dataframe(pd.DataFrame(users_res.data), use_container_width=True)
+        else:
+            st.info("No users found.")
+    
+    with st.container(border=True):
+        st.markdown("#### Global Pass Issuance")
+        all_regs = supabase.table("registrations").select("id, event_id, student_id, payment_status, registration_status, registered_at").order("registered_at", desc=True).execute()
+        if all_regs.data:
+            st.dataframe(pd.DataFrame(all_regs.data), use_container_width=True)
+        else:
+            st.info("No registrations mapped yet.")

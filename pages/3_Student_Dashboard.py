@@ -1,5 +1,6 @@
 import streamlit as st
 import uuid
+import datetime
 from utils.db import get_supabase, reset_supabase_session
 from utils.qr_ops import get_qr_base64
 from utils.ai_recs import get_recommendations
@@ -82,7 +83,7 @@ with c4:
 render_html("<div style='height: 1.5rem;'></div>")
 
 # Main Navigation Tabs
-tab_discover, tab_passes, tab_ai = st.tabs(["Discover Events", "My Digital Passes", "AI Recommendations"])
+tab_discover, tab_passes, tab_ai, tab_profile = st.tabs(["Discover Events", "My Digital Passes", "AI Recommendations", "⚙️ Profile Settings"])
 
 # -------------------------------------------------------------
 # TAB 1: DISCOVER EVENTS
@@ -111,8 +112,9 @@ with tab_discover:
             label_visibility="collapsed"
         )
 
-    # Fetch Approved Events
-    events_res = supabase.table("events").select("*, societies(name)").eq("status", "approved").order("date").execute()
+    # Fetch Approved Events (Excluding Expired)
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    events_res = supabase.table("events").select("*, societies(name)").eq("status", "approved").gte("date", today_str).order("date").execute()
 
     if events_res.data:
         event_ids = [e["id"] for e in events_res.data]
@@ -339,3 +341,25 @@ with tab_ai:
             "Click 'Generate Recommendations' to get AI-powered event suggestions.",
             "🤖"
         )
+
+# -------------------------------------------------------------
+# TAB 4: PROFILE SETTINGS
+# -------------------------------------------------------------
+with tab_profile:
+    render_html("""
+    <div style="margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #f1f5f9; margin: 0;">Profile Configuration</h3>
+        <p style="font-size: 0.825rem; color: #64748b; margin-top: 0.25rem;">Fine-tune your major and interests for razor-sharp Gemini AI recommendations.</p>
+    </div>
+    """)
+    with st.container(border=True):
+        with st.form("update_profile_form"):
+            current_dept = student_profile.get("department") or ""
+            current_interests = student_profile.get("interests") or ""
+            new_dept = st.text_input("Academic Department / Major", value=current_dept, placeholder="e.g., Computer Science")
+            new_interests = st.text_area("Event Interests", value=current_interests, placeholder="e.g., AI, Robotics, Music, Tech Seminars")
+            
+            if st.form_submit_button("Save Preferences", type="primary", use_container_width=True):
+                supabase.table("profiles").update({"department": new_dept, "interests": new_interests}).eq("id", user_id).execute()
+                st.success("Preferences securely saved! Your AI recommendations will now adapt.")
+                st.rerun()
