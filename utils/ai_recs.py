@@ -50,7 +50,19 @@ def get_recommendations(user_id: str) -> str:
         Format the response in engaging markdown. Be enthusiastic, clear, and brief. Start directly with the recommendations.
         """
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Dynamically discover an available model since hardcoded names may deprecate over time
+        available_model = None
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                available_model = m.name
+                # Prefer the fastest/latest available models if present
+                if 'flash' in m.name or 'pro' in m.name:
+                    break
+                    
+        if not available_model:
+            return "Error: Could not find any valid text generation models available for your API key."
+            
+        model = genai.GenerativeModel(available_model)
         response = model.generate_content(prompt)
         return response.text
         
