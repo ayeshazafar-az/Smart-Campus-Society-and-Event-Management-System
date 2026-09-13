@@ -4,6 +4,8 @@
 
 ### Intelligent Campus Society & Event Management Platform
 
+**🚀 Live Demo:** [campus-pulse.streamlit.app](https://campus-pulse.streamlit.app/)
+
 **An enterprise-grade, institutional university platform engineered with a Zero-Trust Security Architecture, PostgreSQL atomic concurrency locks, a mathematical schedule conflict engine, and an advisory Google Gemini AI copilot.**
 
 ---

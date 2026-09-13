@@ -477,19 +477,35 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_feedback ENABLE ROW LEVEL SECURITY;
 
+-- ── 4. Helper Function: is_admin() (Prevents 42P17 Infinite Recursion in RLS) ──
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT COALESCE(
+    (SELECT role = 'admin' FROM public.profiles WHERE id = auth.uid()),
+    false
+  );
+$$;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated;
+
 -- ── 4a. Profiles Policies
 DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_admin_all" ON public.profiles;
 DROP POLICY IF EXISTS "profiles_select_society_roster" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_select_permitted" ON public.profiles;
 
 -- Allow users to read their own profile, or admins to read all profiles, or society heads to read registered attendees
 CREATE POLICY "profiles_select_permitted"
   ON public.profiles FOR SELECT
   USING (
     auth.uid() = id
-    OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+    OR public.is_admin()
     OR EXISTS (
       SELECT 1 FROM public.registrations r
       JOIN public.events e ON e.id = r.event_id
@@ -515,8 +531,8 @@ CREATE POLICY "societies_select_all"
 
 CREATE POLICY "societies_write_admin"
   ON public.societies FOR ALL
-  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 CREATE POLICY "societies_update_head"
   ON public.societies FOR UPDATE
@@ -534,28 +550,28 @@ CREATE POLICY "events_select_policy"
   USING (
     status = 'approved'
     OR EXISTS (SELECT 1 FROM public.societies WHERE id = events.society_id AND head_id = auth.uid())
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    OR public.is_admin()
   );
 
 CREATE POLICY "events_insert_head"
   ON public.events FOR INSERT
   WITH CHECK (
     EXISTS (SELECT 1 FROM public.societies WHERE id = society_id AND head_id = auth.uid())
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    OR public.is_admin()
   );
 
 CREATE POLICY "events_update_head"
   ON public.events FOR UPDATE
   USING (
     (EXISTS (SELECT 1 FROM public.societies WHERE id = events.society_id AND head_id = auth.uid()) AND status = 'pending')
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    OR public.is_admin()
   );
 
 CREATE POLICY "events_delete_policy"
   ON public.events FOR DELETE
   USING (
     (EXISTS (SELECT 1 FROM public.societies WHERE id = events.society_id AND head_id = auth.uid()) AND status = 'pending')
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    OR public.is_admin()
   );
 
 -- ── 4d. Registrations Policies
@@ -572,7 +588,7 @@ CREATE POLICY "registrations_select_policy"
       JOIN public.societies s ON s.id = e.society_id
       WHERE e.id = registrations.event_id AND s.head_id = auth.uid()
     )
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    OR public.is_admin()
   );
 
 -- Force all inserts through register_for_event RPC
@@ -582,8 +598,8 @@ CREATE POLICY "registrations_deny_direct_insert"
 
 CREATE POLICY "registrations_update_cancel"
   ON public.registrations FOR UPDATE
-  USING (student_id = auth.uid() OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'))
-  WITH CHECK (student_id = auth.uid() OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+  USING (student_id = auth.uid() OR public.is_admin())
+  WITH CHECK (student_id = auth.uid() OR public.is_admin());
 
 -- ── 4e. Attendance Policies
 DROP POLICY IF EXISTS "attendance_select_policy" ON public.attendance;
@@ -602,7 +618,7 @@ CREATE POLICY "attendance_select_policy"
       JOIN public.societies s ON s.id = e.society_id
       WHERE r.id = attendance.registration_id AND s.head_id = auth.uid()
     )
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    OR public.is_admin()
   );
 
 -- Force all attendance through validate_attendance RPC
@@ -614,7 +630,7 @@ CREATE POLICY "attendance_deny_direct_insert"
 DROP POLICY IF EXISTS "audit_logs_admin_only" ON public.audit_logs;
 CREATE POLICY "audit_logs_admin_only"
   ON public.audit_logs FOR SELECT
-  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+  USING (public.is_admin());
 
 -- ── 4g. Notifications Policies
 DROP POLICY IF EXISTS "notifications_own" ON public.notifications;
@@ -746,4 +762,3 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.safe_promote_to_admin(UUID, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.safe_promote_to_admin(UUID, TEXT) TO authenticated;
-
