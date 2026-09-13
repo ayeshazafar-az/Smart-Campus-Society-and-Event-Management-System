@@ -22,11 +22,12 @@ def apply_custom_theme():
         --bg-secondary: #111827;
         --bg-card: rgba(17, 24, 39, 0.7);
         --bg-glass: rgba(255, 255, 255, 0.03);
-        --border-subtle: rgba(255, 255, 255, 0.06);
-        --border-glow: rgba(129, 140, 248, 0.2);
-        --text-primary: #f1f5f9;
-        --text-secondary: #94a3b8;
-        --text-muted: #64748b;
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --border-glow: rgba(129, 140, 248, 0.25);
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --text-tertiary: #64748b;
         --accent-indigo: #818cf8;
         --accent-violet: #a78bfa;
         --accent-emerald: #34d399;
@@ -357,29 +358,39 @@ def apply_custom_theme():
         white-space: nowrap;
     }
     .badge-approved, .badge-active, .badge-confirmed, .badge-free {
-        background: rgba(52, 211, 153, 0.12);
+        background: rgba(52, 211, 153, 0.14);
         color: #34d399;
-        border: 1px solid rgba(52, 211, 153, 0.25);
+        border: 1px solid rgba(52, 211, 153, 0.3);
     }
     .badge-pending {
-        background: rgba(251, 191, 36, 0.12);
+        background: rgba(251, 191, 36, 0.14);
         color: #fbbf24;
-        border: 1px solid rgba(251, 191, 36, 0.25);
+        border: 1px solid rgba(251, 191, 36, 0.3);
     }
-    .badge-rejected, .badge-soldout, .badge-cancelled {
-        background: rgba(251, 113, 133, 0.12);
+    .badge-rejected {
+        background: rgba(251, 113, 133, 0.14);
         color: #fb7185;
-        border: 1px solid rgba(251, 113, 133, 0.25);
+        border: 1px solid rgba(251, 113, 133, 0.3);
     }
-    .badge-category, .badge-paid {
-        background: rgba(129, 140, 248, 0.12);
-        color: #818cf8;
-        border: 1px solid rgba(129, 140, 248, 0.25);
+    .badge-cancelled, .badge-soldout {
+        background: rgba(148, 163, 184, 0.14);
+        color: #94a3b8;
+        border: 1px solid rgba(148, 163, 184, 0.25);
     }
-    .badge-ai {
-        background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(129, 140, 248, 0.2));
+    .badge-completed {
+        background: rgba(167, 139, 250, 0.14);
         color: #a78bfa;
         border: 1px solid rgba(167, 139, 250, 0.3);
+    }
+    .badge-category, .badge-paid {
+        background: rgba(129, 140, 248, 0.14);
+        color: #818cf8;
+        border: 1px solid rgba(129, 140, 248, 0.3);
+    }
+    .badge-ai {
+        background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(129, 140, 248, 0.25));
+        color: #c4b5fd;
+        border: 1px solid rgba(167, 139, 250, 0.4);
         font-size: 0.7rem;
         padding: 0.25rem 0.75rem;
     }
@@ -830,8 +841,15 @@ def apply_custom_theme():
         border-radius: var(--radius-lg) !important;
         background: var(--gradient-card) !important;
         padding: 1.5rem !important;
-    }
     </style>
+    <script>
+    // BFCache eviction guard: reload page if restored from browser back-forward cache after logout
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+    </script>
     """)
 
 
@@ -920,3 +938,60 @@ def render_empty_state(title: str, description: str, icon_symbol: str = "✨"):
 def render_badge_html(text: str, variant: str = "category") -> str:
     """Returns HTML for a styled micro-badge."""
     return f'<span class="badge badge-{variant}">{text}</span>'
+
+
+def render_status_badge(status: str) -> str:
+    """Returns a styled HTML badge for an event, pass, or charter status."""
+    st_clean = (status or "pending").strip().lower()
+    mapping = {
+        "approved":  ("APPROVED", "approved"),
+        "active":    ("ACTIVE", "approved"),
+        "confirmed": ("CONFIRMED", "approved"),
+        "completed": ("COMPLETED", "completed"),
+        "pending":   ("PENDING REVIEW", "pending"),
+        "rejected":  ("REJECTED", "rejected"),
+        "cancelled": ("CANCELLED", "cancelled"),
+        "soldout":   ("SOLD OUT", "soldout"),
+        "attended":  ("ATTENDED", "completed"),
+    }
+    label, variant = mapping.get(st_clean, (st_clean.upper(), "category"))
+    return f'<span class="badge badge-{variant}">{label}</span>'
+
+
+def render_feedback_banner(
+    variant: str,
+    title: str,
+    message: str,
+    next_step: str = "",
+) -> None:
+    """
+    Renders an institutional feedback banner answering:
+    - What happened?
+    - Why?
+    - What happens next?
+    """
+    colors = {
+        "success": ("#34d399", "rgba(52, 211, 153, 0.1)", "✅"),
+        "warning": ("#fbbf24", "rgba(251, 191, 36, 0.1)", "⚠️"),
+        "error":   ("#fb7185", "rgba(251, 113, 133, 0.1)", "⛔"),
+        "info":    ("#818cf8", "rgba(129, 140, 248, 0.1)", "ℹ️"),
+    }.get(variant, ("#818cf8", "rgba(129, 140, 248, 0.1)", "ℹ️"))
+
+    next_step_html = (
+        f'<div style="margin-top:0.5rem;font-size:0.8rem;color:#cbd5e1;'
+        f'border-top:1px solid rgba(255,255,255,0.06);padding-top:0.4rem;">'
+        f'<strong>Next Steps:</strong> {next_step}</div>'
+        if next_step else ""
+    )
+
+    render_html(f"""
+    <div style="background:{colors[1]};border-left:4px solid {colors[0]};
+                border-radius:0 12px 12px 0;padding:0.9rem 1.15rem;margin:0.75rem 0;">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+            <span style="font-size:1.1rem;">{colors[2]}</span>
+            <span style="font-weight:700;color:#f8fafc;font-size:0.95rem;">{title}</span>
+        </div>
+        <div style="font-size:0.85rem;color:#cbd5e1;line-height:1.45;">{message}</div>
+        {next_step_html}
+    </div>
+    """)
